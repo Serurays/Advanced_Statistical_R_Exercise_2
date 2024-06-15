@@ -1,0 +1,125 @@
+---
+title: "Exercise-2"
+author: "Serra Aksoy"
+date: "`r Sys.Date()`"
+output:
+  pdf_document: default
+  word_document: default
+  html_document: default
+---
+
+# Exercise 2.1: Linear Regression with Housing Price Prediction
+
+## Load the Dataset
+```{r}
+housing_data <- read.csv("Housing.csv")
+```
+
+## Data Exploration
+```{r}
+str(housing_data)
+summary(housing_data)
+```
+
+## Calculate Average Price
+```{r}
+average_price <- mean(housing_data$price)
+paste("The average price of the house is", average_price)
+```
+
+## Fit a Linear Regression Model
+```{r}
+model <- lm(price ~ area + bedrooms + bathrooms + airconditioning,
+            data = housing_data)
+summary(model)
+```
+
+## Evaluate the Model
+```{r}
+rsq <- summary(model)$r.squared
+adj_rsq <- summary(model)$adj.r.squared
+paste("R-squared:", rsq)
+paste("Adjusted R-squared:", adj_rsq)
+```
+
+## Predict Prices
+```{r}
+predictions <- predict(model, newdata=housing_data[1:10, ])
+predictions
+housing_data[1:10, 'price']
+```
+
+## Residual Analysis
+```{r}
+plot(model$residuals)
+abline(h = 0, col = "red")
+```
+
+## Plot Regression Coefficients
+```{r}
+library(ggplot2)
+coeffs <- data.frame(term = names(coef(model)), estimate = coef(model))
+ggplot(coeffs, aes(x = term, y = estimate)) + 
+  geom_point() + 
+  geom_errorbar(aes(ymin = estimate - 1.96*summary(model)$coefficients[,2], ymax = estimate + 1.96*summary(model)$coefficients[,2]))
+```
+
+# Exercise 2.2: Logistic Regression with Credit Card Eligibility Data
+
+## Load the Dataset
+```{r}
+credit_data <- read.csv("dataset.csv")
+```
+
+## Data Exploration
+```{r}
+str(credit_data)
+summary(credit_data)
+```
+
+## Calculate Median Income
+```{r}
+median_income <- median(credit_data$Total_income)
+credit_data$above_median_income <- ifelse(credit_data$Total_income > median_income, 1, 0)
+credit_data$above_median_income
+```
+
+## Fit a Logistic Regression Model
+```{r}
+logistic_model <- glm(Target ~ Age + Num_children + Num_family + Family_status, data = credit_data, family="binomial")
+summary(logistic_model)
+```
+
+## Evaluate the Model
+```{r}
+aic <- summary(logistic_model)$aic
+deviance <- summary(logistic_model)$deviance
+paste("AIC:", aic)
+paste("Deviance:", deviance)
+```
+
+## Predict Probabilities
+```{r}
+predicted_probabilities <- predict(logistic_model, newdata=credit_data[1:10, ], type="response")
+predicted_probabilities
+credit_data[1:10, "Target"]
+```
+
+## Plot ROC curve and calculate AUC
+```{r}
+library(pROC)
+roc_curve <- roc(credit_data$Target, predict(logistic_model, type="response"))
+plot(roc_curve)
+auc(roc_curve)
+```
+
+## Confusion Matrix
+```{r}
+library(caret)
+predictions <- ifelse(predicted_probabilities > 0.5, 1, 0)
+confusion_matrix <- confusionMatrix(as.factor(predictions), as.factor(credit_data$Target[1:10]))
+confusion_matrix
+
+sum(credit_data$Target == 0)
+sum(credit_data$Target == 1)
+```
